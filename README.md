@@ -1,3 +1,13 @@
+---
+title: GapScope
+colorFrom: indigo
+colorTo: green
+sdk: gradio
+sdk_version: 6.14.0
+app_file: app.py
+pinned: false
+---
+
 # GapScope
 
 A Gradio app that searches recent arXiv papers on a topic, ranks them by a trending score, and uses Groq-hosted Llama 3.3 70B to summarize each paper, identify research gaps, and propose novel research directions.
