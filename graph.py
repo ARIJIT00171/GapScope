@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph, END
 import tools
 import prompts
 
-MODEL = "llama-3.1-8b-instant" #"llama-3.3-70b-versatile"
+MODEL = "llama-3.3-70b-versatile" #"llama-3.1-8b-instant"
 TOP_N = 2
 RANK_POOL = 5
 
