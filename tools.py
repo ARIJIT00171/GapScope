@@ -41,6 +41,20 @@ def _reconstruct_abstract(inv_idx: Optional[dict]) -> str:
     return " ".join(w for _, w in positions)
 
 
+def _venue_from_openalex(work: dict) -> Optional[str]:
+    # Look for a published-venue source (conference/journal) different from arXiv.
+    primary = work.get("primary_location") or {}
+    locations = work.get("locations") or []
+    candidates = [primary] + [l for l in locations if l is not primary]
+    for loc in candidates:
+        src = (loc or {}).get("source") or {}
+        name = (src.get("display_name") or "").strip()
+        if not name or "arxiv" in name.lower():
+            continue
+        return name
+    return None
+
+
 def _arxiv_id_from_openalex(work: dict) -> Optional[str]:
     # arxiv works in OpenAlex carry an arxiv DOI like
     # "https://doi.org/10.48550/arxiv.2605.06330" (case varies). Extract the suffix.
@@ -87,6 +101,7 @@ def _openalex_to_paper(work: dict, now: datetime) -> Optional[dict]:
         "pdf_url": pdf_url,
         "age_days": age_days,
         "citation_count": work.get("cited_by_count"),
+        "venue": _venue_from_openalex(work),
         "source": "openalex",
     }
 
@@ -151,6 +166,7 @@ def _search_via_arxiv(topic: str, max_results: int, days_back: int, category_que
             "pdf_url": r.pdf_url,
             "age_days": age_days,
             "citation_count": None,
+            "venue": (getattr(r, "journal_ref", None) or "").strip() or None,
             "source": "arxiv",
         })
         if len(papers) >= max_results:

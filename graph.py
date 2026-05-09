@@ -80,6 +80,8 @@ def analyze_paper_node(state: GraphState) -> dict:
         "title": paper["title"],
         "arxiv_id": paper["arxiv_id"],
         "pdf_url": paper["pdf_url"],
+        "published": paper.get("published", ""),
+        "venue": paper.get("venue"),
         "analysis": resp.content,
     }
     return {
@@ -110,7 +112,14 @@ def synthesize_report_node(state: GraphState) -> dict:
     parts = [f"# GapScope Report: {state['topic']}\n"]
     for i, r in enumerate(state["results"], 1):
         parts.append(f"## Paper {i}: {r['title']}\n")
-        parts.append(f"**arXiv:** [{r['arxiv_id']}]({r['pdf_url']})\n")
+        meta_bits: list[str] = []
+        pub = (r.get("published") or "").split("T")[0]
+        if pub:
+            meta_bits.append(f"**Published:** {pub}")
+        if r.get("venue"):
+            meta_bits.append(f"**Venue:** {r['venue']}")
+        meta_bits.append(f"**arXiv:** [{r['arxiv_id']}]({r['pdf_url']})")
+        parts.append(" &nbsp;·&nbsp; ".join(meta_bits) + "\n")
         parts.append(r["analysis"])
         parts.append("\n---\n")
     return {"final_report": "\n".join(parts)}
