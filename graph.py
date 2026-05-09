@@ -72,7 +72,7 @@ def rank_trending_node(state: GraphState) -> dict:
 
 def analyze_paper_node(state: GraphState) -> dict:
     paper = state["top_papers"][state["current_paper_index"]]
-    llm = _llm(temperature=0.4, max_tokens=3500)
+    llm = _llm(temperature=0.4, max_tokens=4500)
     msg = prompts.COMBINED_PROMPT.format(title=paper["title"], abstract=paper["abstract"])
     resp = llm.invoke([HumanMessage(content=msg)])
 
