@@ -8,11 +8,20 @@ app_file: app.py
 pinned: false
 ---
 
+<div align="center">
+
 # GapScope
 
-A Gradio app that searches recent arXiv papers on a topic, ranks them by a trending score, and uses Groq-hosted Llama 3.3 70B to summarize each paper, identify research gaps, and propose novel research directions — all in a single fused LLM call per paper.
+**Find research gaps in trending arXiv papers — powered by OpenAlex, LangGraph, and Groq Llama 3.3 70B.**
 
-Live demo: https://huggingface.co/spaces/Arijit171/GapScope
+[![Open in Spaces](https://img.shields.io/badge/Live%20Demo-Hugging%20Face%20Spaces-yellow?style=for-the-badge)](https://huggingface.co/spaces/Arijit171/GapScope)
+[![GitHub](https://img.shields.io/badge/Source-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/ARIJIT00171/GapScope)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Gradio](https://img.shields.io/badge/Gradio-6.14-FF7C00?style=for-the-badge)](https://gradio.app/)
+
+</div>
+
+A Gradio app that searches recent arXiv papers on a topic, ranks them by a trending score, and uses Groq-hosted Llama 3.3 70B to summarize each paper, identify research gaps, and propose novel research directions — all in a single fused LLM call per paper.
 
 ## How it works
 
@@ -28,35 +37,20 @@ The orchestration is a LangGraph state machine where `analyze_paper` self-loops 
 ## Process flowchart
 
 ```mermaid
-flowchart TD
-    A[User enters topic + field preset] --> B[search_arxiv_node]
-    B --> C{OpenAlex<br/>available?}
-    C -->|yes| D[OpenAlex search<br/>citations included]
-    C -->|no / empty| E[arXiv fallback<br/>via arxiv library]
-    D --> F[rank_trending_node]
-    E --> G{Citations<br/>missing?}
-    G -->|yes| H[Semantic Scholar<br/>backfill]
-    G -->|no| F
-    H --> F
-    F --> I[Score by<br/>cc+1 / age_days]
-    I --> J{Any<br/>top papers?}
-    J -->|no| N[synthesize_report_node]
-    J -->|yes| K[analyze_paper_node<br/>fused LLM call]
-    K --> L{More<br/>papers?}
-    L -->|yes, self-loop| K
-    L -->|no| N
-    N --> O[Markdown report<br/>rendered in Gradio]
+flowchart LR
+    A[Topic +<br/>field preset] --> B[Search<br/>OpenAlex → arXiv fallback]
+    B --> C[Rank by<br/>trending score]
+    C --> D[Analyze top 2<br/>fused LLM call]
+    D -. loop per paper .-> D
+    D --> E[Markdown<br/>report]
 
     style B fill:#6366f1,color:#fff
-    style F fill:#6366f1,color:#fff
-    style K fill:#10b981,color:#fff
-    style N fill:#6366f1,color:#fff
-    style D fill:#e0e7ff
-    style E fill:#fef3c7
-    style H fill:#fef3c7
+    style C fill:#6366f1,color:#fff
+    style D fill:#10b981,color:#fff
+    style E fill:#6366f1,color:#fff
 ```
 
-`analyze_paper_node` (green) is the only node that calls the LLM. With `TOP_N=2` the graph makes exactly 2 Groq calls per run.
+`Analyze` (green) is the only LLM-calling step and self-loops once per top paper, so the graph makes exactly 2 Groq calls per run.
 
 ## Tech stack
 
