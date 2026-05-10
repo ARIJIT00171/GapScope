@@ -20,10 +20,18 @@ ARXIV_SOURCE_ID = "S4306400194"  # arXiv's source id in OpenAlex
     wait=wait_exponential(multiplier=1, min=2, max=8),
     reraise=True,
 )
-def _openalex_search_raw(topic: str, per_page: int, from_date: str) -> dict:
+def _openalex_search_raw(
+    topic: str, per_page: int, from_date: str, concept_id: str = ""
+) -> dict:
+    filters = [
+        f"primary_location.source.id:{ARXIV_SOURCE_ID}",
+        f"from_publication_date:{from_date}",
+    ]
+    if concept_id:
+        filters.append(f"concepts.id:{concept_id}")
     params = {
         "search": topic,
-        "filter": f"primary_location.source.id:{ARXIV_SOURCE_ID},from_publication_date:{from_date}",
+        "filter": ",".join(filters),
         "sort": "publication_date:desc",
         "per-page": min(max(per_page, 1), 200),
     }
@@ -106,10 +114,14 @@ def _openalex_to_paper(work: dict, now: datetime) -> Optional[dict]:
     }
 
 
-def _search_via_openalex(topic: str, max_results: int, days_back: int) -> list[dict]:
+def _search_via_openalex(
+    topic: str, max_results: int, days_back: int, concept_id: str = ""
+) -> list[dict]:
     from_date = (datetime.now(timezone.utc) - timedelta(days=days_back)).strftime("%Y-%m-%d")
     # OpenAlex filters by date server-side, so no client-side over-fetch needed.
-    data = _openalex_search_raw(topic, per_page=max_results, from_date=from_date)
+    data = _openalex_search_raw(
+        topic, per_page=max_results, from_date=from_date, concept_id=concept_id
+    )
     now = datetime.now(timezone.utc)
     papers: list[dict] = []
     for work in data.get("results", []):
@@ -182,15 +194,19 @@ def search_papers(
     max_results: int = 10,
     days_back: int = 365,
     category_query: str = "",
+    openalex_concept: str = "",
 ) -> list[dict]:
-    cache_key = f"papers::{topic}::{category_query}::{max_results}::{days_back}"
+    cache_key = (
+        f"papers::{topic}::{category_query}::{openalex_concept}::"
+        f"{max_results}::{days_back}"
+    )
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
     # Primary: OpenAlex (high rate limit, citations included)
     try:
-        papers = _search_via_openalex(topic, max_results, days_back)
+        papers = _search_via_openalex(topic, max_results, days_back, openalex_concept)
         if papers:
             cache.set(cache_key, papers)
             return papers
